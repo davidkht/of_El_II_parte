@@ -6,8 +6,8 @@ from openpyxl.utils.dataframe import dataframe_to_rows  # Función para converti
 from openpyxl.drawing.image import Image  # Importa Image para añadir imágenes a los archivos Excel
 from datetime import datetime
 
-TRM_ACTUAL_EURO=4500
-TRM_ACTUAL_USD=3000
+TRM_ACTUAL_EURO=4300
+TRM_ACTUAL_USD=3800
 
 script_actual = os.path.realpath(__file__)  # Obtiene la ruta absoluta del script en ejecución
 script_directory = os.path.dirname(script_actual)  # Obtiene el directorio donde se encuentra el script
@@ -44,8 +44,7 @@ def limpiar_dataframe(df):
     }
 
     return df, totales
-
-    
+ 
 def convertir_moneda(fila, moneda_objetivo):
     """
     Convierte el valor unitario de compra de una fila del DataFrame a la moneda objetivo.
@@ -107,11 +106,11 @@ def generar_tabla_comparativa(SP, PVP, moneda_pvp):
     df_comparacion['CANTIDAD'] = SP['CANTIDAD'] == PVP['CANTIDAD']
 
     # Uso de la función apply con lambda para convertir los precios según la moneda elegida
-    if moneda_pvp == 1:
+    if moneda_pvp == 'COP':
         df_comparacion['PRECIO SP EN COP'] = SP.apply(lambda fila: convertir_moneda(fila, 'COP'), axis=1)
-    elif moneda_pvp == 2:
+    elif moneda_pvp == 'EUR':
         df_comparacion['PRECIO SP EN EUR'] = SP.apply(lambda fila: convertir_moneda(fila, 'EUR'), axis=1)
-    elif moneda_pvp == 3:
+    elif moneda_pvp == 'USD':
         df_comparacion['PRECIO SP EN USD'] = SP.apply(lambda fila: convertir_moneda(fila, 'USD'), axis=1)
 
     df_comparacion['SUBTOTAL PVP'] = PVP['SUBTOTAL UNITARIO']
