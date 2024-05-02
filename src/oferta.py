@@ -65,29 +65,24 @@ def convertir_moneda(fila, moneda_objetivo):
     
     return precio_origen * tasa_cambio
 
-def dataframe_pvp(directorio):
+def dataframe_pvp(ruta_pvp):
     """
     Busca y lee el archivo Excel PVP en el directorio especificado, limpiando el DataFrame resultante.
     
-    :param directorio: El directorio donde se buscarán los archivos Excel que comienzan con 'PVP'.
+    :param ruta_pvp: Ruta del archivo PVP.
     :return: Un DataFrame limpio y un diccionario con los totales de ciertas columnas.
     """
-    archivo_pvp = next((archivo for archivo in os.listdir(directorio) if archivo.startswith('PVP')), None)
-    ruta_pvp = os.path.join(directorio, archivo_pvp)
+
     pvp = pd.read_excel(ruta_pvp, header=None)  # Leer sin encabezado
     return limpiar_dataframe(pvp)
 
-def dataframe_sp(directorio):
+def dataframe_sp(ruta_sp):
     """
     Busca y lee el archivo Excel SP en el directorio especificado.
     
-    :param directorio: El directorio donde se buscarán los archivos Excel que comienzan con 'SP'.
+    :param ruta_sp: Ruta del archivo SP en el proyecto
     :return: Un DataFrame creado a partir del archivo Excel SP encontrado.
     """
-    archivo_sp = next((archivo for archivo in os.listdir(directorio) if archivo.startswith('SP')), None)
-
-    ruta_sp = os.path.join(directorio, archivo_sp)
-
     return pd.read_excel(ruta_sp, skiprows=18, sheet_name='SOLICITUD')
 
 def generar_tabla_comparativa(SP, PVP, moneda_pvp):
@@ -96,9 +91,11 @@ def generar_tabla_comparativa(SP, PVP, moneda_pvp):
     
     :param SP: DataFrame de SP que contiene información sobre productos.
     :param PVP: DataFrame de PVP que contiene información sobre precios de venta.
-    :param moneda_pvp: Un entero que indica la moneda del PVP (1: COP, 2: EURO, 3: USD).
+    :param moneda_pvp: Un string que indica la moneda del PVP (1: COP, 2: EURO, 3: USD).
     :return: Un DataFrame que contiene la tabla comparativa generada.
     """
+
+
     df_comparacion = pd.DataFrame()
     # Comparaciones directas entre columnas de ambos DataFrames
     df_comparacion['NOMBRE'] = SP['DESCRIPCION'] == PVP['DESCRIPCION']
@@ -112,15 +109,21 @@ def generar_tabla_comparativa(SP, PVP, moneda_pvp):
         df_comparacion['PRECIO SP EN EUR'] = SP.apply(lambda fila: convertir_moneda(fila, 'EUR'), axis=1)
     elif moneda_pvp == 'USD':
         df_comparacion['PRECIO SP EN USD'] = SP.apply(lambda fila: convertir_moneda(fila, 'USD'), axis=1)
+    
+    PVP['SUBTOTAL UNITARIO'] = pd.to_numeric(PVP['SUBTOTAL UNITARIO'], errors='coerce')
+    df_comparacion['SUBTOTAL PVP'] = PVP['SUBTOTAL UNITARIO'].round(3)
+    
 
-    df_comparacion['SUBTOTAL PVP'] = PVP['SUBTOTAL UNITARIO']
-    columna_precio_sp = 'PRECIO SP EN ' + ['COP', 'EUR', 'USD'][moneda_pvp-1]
+    df_comparacion['SUBTOTAL PVP'] = df_comparacion['SUBTOTAL PVP'].round(3)
+    columna_precio_sp = 'PRECIO SP EN ' + moneda_pvp
     df_comparacion[columna_precio_sp] = df_comparacion[columna_precio_sp].replace(0, np.nan)
 
-    df_comparacion['PRECIO VENTA/PRECIO COMPRA'] = df_comparacion['SUBTOTAL PVP'] / df_comparacion[columna_precio_sp]
-    df_comparacion['PRECIO VENTA/PRECIO COMPRA'].fillna(0, inplace=True)
+    df_comparacion['AUMENTO'] = df_comparacion['SUBTOTAL PVP'] / df_comparacion[columna_precio_sp]
+    df_comparacion['AUMENTO'] = df_comparacion['AUMENTO'].fillna(0)
+    df_comparacion['AUMENTO'] = df_comparacion['AUMENTO'].infer_objects(copy=False)
+    df_comparacion['AUMENTO'] = df_comparacion['AUMENTO']
 
-    return df_comparacion
+    return df_comparacion.round(3)
 
 def llenar_oferta(directorio, dfpvp):
     """
@@ -143,51 +146,14 @@ def llenar_oferta(directorio, dfpvp):
     # Obtener la fecha actual en el formato día/mes/año
     fecha_actual = datetime.now().strftime("%d/%m/%Y")
     hoja_destino['I17'] = f"FECHA: {fecha_actual}"
-    img = Image(os.path.join(script_directory, 'second.png'))
+    img = Image(os.path.join(script_directory,'..','docs','second.png'))
     hoja_destino.add_image(img, 'B1')
 
     wb_OF.save(ruta_of)
 
 def main():
     # Carga los datos del SP (Stock Presente) y PVP (Precio de Venta al Público) desde archivos Excel ubicados en el mismo directorio que este script.
-    sp = dataframe_sp(script_directory)
-
-    pvp, totales = dataframe_pvp(script_directory)
-
-
-    # Muestra información relevante de los DataFrames cargados para verificar su correcta lectura y limpieza.
-    print("----------------------------------------------------------------------------------------------------------")
-    print("+++++++++++++++++++++++++++++++++++++++++++++TABLA SP+++++++++++++++++++++++++++++++++++++++++++++++++++\n")
-    print(sp.iloc[:, [5, 0, 8, 10]])
-    print("----------------------------------------------------------------------------------------------------------")
-    print("+++++++++++++++++++++++++++++++++++++++++++++TABLA PVP++++++++++++++++++++++++++++++++++++++++++++++++++\n")
-    print(pvp.iloc[:, [1, 0, 3, 4]])
-    print(totales)
-    print("----------------------------------------------------------------------------------------------------------")
-    # Solicita al usuario que indique la moneda en la que está expresado el PVP, con opciones predefinidas.
-    moneda = solicitar_entrada_numerica('En qué moneda está el PVP? (1. COP, 2. EURO, 3. USD): ', [1, 2, 3])
-
-    # Genera una tabla comparativa entre los datos de SP y PVP, ajustando los precios al tipo de moneda seleccionado.
-    df_COMPARATIVO = generar_tabla_comparativa(sp, pvp, moneda)
-
-    # Imprime la tabla comparativa para revisión del usuario.
-    print("----------------------------------------------------------------------------------------------------------")
-    print("++++++++++++++++++++++++++++++++++++++++++TABLA COMPARATIVA+++++++++++++++++++++++++++++++++++++++++++++\n")
-    print(df_COMPARATIVO)
-    print("----------------------------------------------------------------------------------------------------------")
-
-    # Solicita confirmación al usuario sobre si está de acuerdo con los precios de venta al público (PVP) calculados.
-    confirmacion = solicitar_entrada_numerica("Está de acuerdo con el PVP? Proceder a llenar oferta? (1. Si, 0. No): ", [0, 1])
-
-    # Si el usuario confirma (1), procede a llenar el archivo de oferta con los datos de PVP.
-    if confirmacion == 1:
-
-        llenar_oferta(script_directory, pvp)
-       
-        # Limpieza final: Elimina archivos temporales o no necesarios, como la imagen del encabezado y el script actual.
-        os.remove(os.path.join(script_directory, 'second.png'))  # Elimina la imagen de encabezado.
-        os.remove(script_actual)  # Elimina el script actual para evitar ejecuciones o modificaciones accidentales.
-
+    pass
 
 if __name__ == "__main__":
     main()

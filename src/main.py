@@ -30,9 +30,8 @@ class App(tk.Tk):
         self.title(titulo)
         self.geometry(f'{geometria[0]}x{geometria[1]}')
         self.resizable(True,True)
-        self.minsize(869,500)
-        self.frames = {}
-        # self.icono_e_imagen(self)
+        self.minsize(850,530)
+        self.icono_e_imagen()
         
         # Configurar la expansión de las filas y columnas
         self.grid_columnconfigure(0, weight=1)  # Hace que la columna se expanda
@@ -41,26 +40,15 @@ class App(tk.Tk):
 
         self.frames = {}
 
-        frame_uno=FirstFrame()
-        frame_uno.grid(row=0, column=0, sticky="nsew")
-        self.frames[FirstFrame] = frame_uno
+        self.frame_uno=FirstFrame(self)
+        self.frame_uno.grid(row=0, column=0, sticky="nsew")
+        self.frames[FirstFrame] = self.frame_uno
 
-        frame_dos=SecondFrame()
-        frame_dos.grid(row=0, column=0, sticky="nsew")
-        self.frames[SecondFrame] = frame_dos
+        self.frame_dos=SecondFrame(self)
+        self.frame_dos.grid(row=0, column=0, sticky="nsew")
+        self.frames[SecondFrame] = self.frame_dos
 
-        frame_final=FinalPage()
-        frame_final.grid(row=0, column=0, sticky="nsew")
-        self.frames[FinalPage] = frame_final
-
-
-
-
-        
-        self.current_frame = FirstFrame
-        self.show_frame(FirstFrame)
         self.navigation_buttons()
-        self.update_buttons()
 
         self.current_frame = FirstFrame
         self.show_frame(FirstFrame)
@@ -70,10 +58,8 @@ class App(tk.Tk):
 
 
     def icono_e_imagen(self):
-        self.iconbitmap(os.path.join(script_directory,"imagen.ico"))
-        imagen_ico = Image.open(os.path.join(script_directory,"imagen.ico"))
-        mi_imagen=imagen_ico.resize((48,48))
-        mi_imagen = ImageTk.PhotoImage(mi_imagen)
+        self.iconbitmap(os.path.join(script_directory,'..','docs',"imagen.ico"))
+        
 
     def style_configure(self):
         colordefondo='#2b394a'
@@ -125,10 +111,14 @@ class App(tk.Tk):
         self.cancel_button.grid(row=1,column=2,sticky='e',pady=20,padx=30)
 
     def update_buttons(self):
+        
         self.back_button['state'] = 'normal' if self.current_frame != FirstFrame else 'disabled'
-        self.next_button['state'] = 'normal' if self.current_frame != FinalPage else 'disabled'
+        self.next_button['state'] = 'normal' if self.current_frame != SecondFrame else 'disabled'
+        self.next_button['text'] = 'Finalizar' if self.current_frame == SecondFrame else 'Siguiente'
         if self.current_frame == FirstFrame and not self.frames[FirstFrame].can_go_to_next_page():
-            self.btn_next['state'] = 'disabled'
+            self.next_button['state'] = 'disabled'
+        if self.current_frame == SecondFrame and self.frames[SecondFrame].canFinish():
+            self.next_button['state'] = 'normal'
 
     def configurar_grid(self):
         # Configurar la expansión de las filas y columnas
@@ -138,10 +128,13 @@ class App(tk.Tk):
 
     def rutas(self):
        
-        carpeta_proyecto=self.firstStep.entryCarpetaVar.get()
-        pvp=self.firstStep.entryPVPVar.get()
-        sp=self.firstStep.ruta_sp
-        destino=shutil.copy(pvp,carpeta_proyecto)
+        self.carpeta_proyecto=self.frame_uno.entryCarpetaVar.get()
+        pvp=self.frame_uno.entryPVPVar.get()
+        sp=self.frame_uno.ruta_sp
+        try:
+            destino=shutil.copy(pvp,self.carpeta_proyecto)
+        except shutil.SameFileError:
+            destino=pvp
         return (sp,destino)
 
     def show_frame(self, frame_class):
@@ -153,15 +146,21 @@ class App(tk.Tk):
     def go_back(self):
         if self.current_frame == SecondFrame:
             self.show_frame(FirstFrame)
-        elif self.current_frame == FinalPage:
-            self.show_frame(SecondFrame)
+
 
     def go_next(self):
         if self.current_frame == FirstFrame:
+            sp,pvp=self.rutas()
+            self.tablacomparativa=self.frame_dos.comparar_sp_vs_pvp(sp,pvp)
+            self.frame_dos.create_widgets(self)
             self.show_frame(SecondFrame)
         elif self.current_frame == SecondFrame:
-            self.show_frame(FinalPage)
-
+            try:
+                oferta.llenar_oferta(self.carpeta_proyecto,self.frame_dos.df_pvp)
+                messagebox.showinfo("Finalizado","Oferta finalizada\nRecuerde poner pre-requisitos.")
+                exit()
+            except Exception as e:
+                messagebox.showerror("Error",str(e))
 
 
 class FirstFrame(ttk.Frame):
@@ -217,7 +216,9 @@ class FirstFrame(ttk.Frame):
         # Browse for a directory and attempt to find a 'SP' prefixed file within it.
         carpeta = filedialog.askdirectory() #Ruta de la Carpeta del proyecto
         if carpeta:
+
             archivo_sp = next((archivo for archivo in os.listdir(carpeta) if archivo.startswith('SP')), None)
+
             if archivo_sp:
                 self.ruta_sp=os.path.join(carpeta, archivo_sp) #ruta del sp
                 self.entryCarpetaVar.set(carpeta)
@@ -247,25 +248,35 @@ class FirstFrame(ttk.Frame):
             
 class SecondFrame(ttk.Frame):
 
-    def __init__(self,parent,sp,pvp):
+    def __init__(self,parent):
         super().__init__(parent)
-        self.create_widgets(parent)
-        self.place_widgets()
-        self.comparar_sp_vs_pvp(sp,pvp)
 
     def create_widgets(self,parent):
-        #Labels encabezado
-        self.carpeta=FirstFrame(parent).entryCarpetaVar.get().split('/')[-1]
-        self.label=ttk.Label(self,text='Proyecto: ')
-        self.labelProyecto=ttk.Label(self,text=self.carpeta)
+
+        #Frames
+        
+        titulo=parent.carpeta_proyecto.split('/')[-1]
+        self.frameIzquierdo=ttk.LabelFrame(self,text=titulo,padding=(20, 20))
+        self.frameDerecho= ttk.LabelFrame(self,text='',padding=(20, 20))
+ 
 
         #TreeView
-        self.comparacion=ttk.Treeview(self)
+        self.crear_tabla_comparativa(parent)
+
+        #Frame derecho/Pregunta para continuar
+        self.confirmacion_final(parent)
+        #Frame Derecho/Boton fichas tecnicas
+        self.boton_fichas_tecnicas(parent)
+
+        
+        self.place_widgets()
 
     def place_widgets(self):
-        self.label.grid(row=0,column=0)
-        self.labelProyecto.grid(row=0,column=1)
-        self.comparacion.grid(row=1,column=0,columnspan=2)
+        #SElf frame principal
+        self.frameIzquierdo.grid(row=0,column=0,sticky='nsew',pady=(30,30),padx=(30,30))
+        self.frameDerecho.grid(row=0,column=1)
+        #frame izquierdo
+        self.comparacion.grid(row=0,column=0,columnspan=2,pady=(10,15))        
         
     def comparar_sp_vs_pvp(self,sp,pvp):
         #Extrae la moneda del SP
@@ -275,16 +286,72 @@ class SecondFrame(ttk.Frame):
         wb.close()
 
         df_sp=oferta.dataframe_sp(sp)
-        df_pvp,totales=oferta.dataframe_pvp(pvp)
-        tabla_comparativa=oferta.generar_tabla_comparativa(df_sp,df_pvp,moneda)
+        self.df_pvp,totales=oferta.dataframe_pvp(pvp)
+        tabla_comparativa=oferta.generar_tabla_comparativa(df_sp,self.df_pvp,moneda)
 
         return (tabla_comparativa,totales,moneda)
+    
+    def crear_tabla_comparativa(self,parent):
+
+        self.comparacion=ttk.Treeview(self.frameIzquierdo,show="headings")
+        
+
+        for i in self.comparacion.get_children():
+            self.comparacion.delete(i) 
+
+        tablacomparativa=parent.tablacomparativa
+        df=tablacomparativa[0]
+        totales=tablacomparativa[1]
+        moneda=tablacomparativa[2]
+
+        for i, (key, value) in enumerate(totales.items(),1):
+            ttk.Label(self.frameIzquierdo, text=key).grid(row=i,column=0,pady=(0,10),padx=(10,10),sticky='e')
+            ttk.Label(self.frameIzquierdo, text=moneda+f" {value:.2f}").grid(row=i,column=1,pady=(0,10),padx=(0,10),sticky='w')
+
+        columns = list(df.columns)
+        self.comparacion['columns'] = columns
+
+        for col in columns:
+            self.comparacion.heading(col, text=col)
+            self.comparacion.column(col, width=100,anchor='center')
+
+        self.comparacion.column('NOMBRE',width=60)
+        self.comparacion.column('REFERENCIA',width=78)
+        self.comparacion.column('CANTIDAD',width=70)
+        self.comparacion.column(3,width=110)
+        self.comparacion.column(4,width=110)
+        self.comparacion.column(5,width=75)
 
 
-class FinalPage(ttk.Frame):
+        # Insertar datos del DataFrame al TreeView
+        for index, row in df.iterrows():
+            self.comparacion.insert("", tk.END, values=list(row))
 
-    def __init__(self,parent):
-        super().__init__(parent)
+    def confirmacion_final(self,parent):
+        ttk.Label(self.frameDerecho,text='Está de acuerdo con el costeo?').grid(row=0,column=0,sticky='nsew',pady=20)
+        
+        self.selected_option = tk.IntVar()
+
+        radio1=ttk.Radiobutton(self.frameDerecho,text='SÍ',variable=self.selected_option,value=1,command=parent.update_buttons)
+        radio2=ttk.Radiobutton(self.frameDerecho,text='NO',variable=self.selected_option,value=0,command=parent.update_buttons)
+        radio1.grid(row=1,column=1,sticky='nsew',pady=6,padx=5)
+        radio2.grid(row=1,column=2,sticky='nsew',pady=6,padx=5)
+
+    def canFinish(self):
+        return True if self.selected_option.get()==1 else False
+    
+    def boton_fichas_tecnicas(self,parent):
+        boton=ttk.Button(self.frameDerecho,text='Buscar Fichas Técnicas',command=lambda x=parent:self.fichas_tecnicas(x))
+        boton.grid(row=2,column=0,columnspan=3,sticky='ns',padx=30,pady=50)
+
+    def fichas_tecnicas(self,parent):
+        import fichas_tecnicas
+
+        carpeta_fichas=os.path.join(parent.carpeta_proyecto,'FICHAS_TECNICAS')
+        encontradas,totales=fichas_tecnicas.main(carpeta_fichas,parent.carpeta_proyecto)
+        messagebox.showinfo('Atención',f'Se encontraron {encontradas} fichas técnicas de {totales}.')
+
+
 
 App("Crear Oferta",(1000,500))
 
