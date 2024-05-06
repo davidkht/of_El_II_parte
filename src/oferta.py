@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+import sys
 import openpyxl  # Importa openpyxl para trabajar con archivos Excel
 from openpyxl.utils.dataframe import dataframe_to_rows  # Función para convertir un DataFrame de pandas en filas para Excel
 from openpyxl.drawing.image import Image  # Importa Image para añadir imágenes a los archivos Excel
@@ -9,9 +10,18 @@ from datetime import datetime
 TRM_ACTUAL_EURO=4300
 TRM_ACTUAL_USD=3800
 
-script_actual = os.path.realpath(__file__)  # Obtiene la ruta absoluta del script en ejecución
-script_directory = os.path.dirname(script_actual)  # Obtiene el directorio donde se encuentra el script
+def get_resource_path():
+    """ Retorna la ruta absoluta al recurso, para uso en desarrollo o en el ejecutable empaquetado. """
+    if getattr(sys, 'frozen', False):
+        # Si el programa ha sido empaquetado, el directorio base es el que PyInstaller proporciona
+        base_path = sys._MEIPASS
+    else:
+        # Si estamos en desarrollo, utiliza la ubicación del script
+        base_path = os.path.dirname(os.path.realpath(__file__))
 
+    return base_path
+
+script_directory = get_resource_path()
 
 
 def limpiar_dataframe(df):
@@ -151,9 +161,3 @@ def llenar_oferta(directorio, dfpvp):
 
     wb_OF.save(ruta_of)
 
-def main():
-    # Carga los datos del SP (Stock Presente) y PVP (Precio de Venta al Público) desde archivos Excel ubicados en el mismo directorio que este script.
-    pass
-
-if __name__ == "__main__":
-    main()
