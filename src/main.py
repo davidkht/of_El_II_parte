@@ -192,7 +192,7 @@ class App(tk.Tk):
             self.show_frame(SecondFrame)
         elif self.current_frame == SecondFrame:
             try:
-                oferta.llenar_oferta(self.carpeta_proyecto,self.frame_dos.df_pvp)
+                oferta.llenar_oferta(self.carpeta_proyecto,self.frame_dos.df_pvp,self.tablacomparativa[2])
                 messagebox.showinfo("Finalizado","Oferta finalizada\nRecuerde poner pre-requisitos.")
                 exit()
             except Exception as e:
@@ -232,8 +232,8 @@ class FirstFrame(ttk.Frame):
         self.entryPVPVar = tk.StringVar()
         
         # Entry widgets for displaying the paths, set to readonly to prevent manual user edits.
-        self.entryCarpeta = ttk.Entry(self, textvariable=self.entryCarpetaVar, width=80, state='readonly')
-        self.entryPVP = ttk.Entry(self, textvariable=self.entryPVPVar, width=80, state='readonly')
+        self.entryCarpeta = ttk.Entry(self, textvariable=self.entryCarpetaVar, width=180, state='readonly')
+        self.entryPVP = ttk.Entry(self, textvariable=self.entryPVPVar, width=180, state='readonly')
         
         # Buttons for triggering the browse dialogs.
         self.buttonCarpeta = ttk.Button(self, text='Examinar', width=25, command=lambda parent=parent:self.browse_project_directory(parent))
@@ -256,12 +256,12 @@ class FirstFrame(ttk.Frame):
         self.rowconfigure(6, weight=1)
 
         # Placement of the widgets using grid layout to achieve desired UI structure.
-        self.labelCarpeta.grid(row=1, column=1,sticky='w')
-        self.labelPVP.grid(row=4, column=1,sticky='w')
-        self.entryCarpeta.grid(row=2, column=1, sticky='ew')
-        self.entryPVP.grid(row=5, column=1, sticky='ew')
-        self.buttonCarpeta.grid(row=2, column=2, sticky='ew')
-        self.buttonPVP.grid(row=5, column=2, sticky='ew')
+        self.labelCarpeta.grid(row=1, column=1,sticky='w',pady=(20,2))
+        self.labelPVP.grid(row=4, column=1,sticky='w',pady=(20,2))
+        self.entryCarpeta.grid(row=2, column=1, sticky='ew',pady=2)
+        self.entryPVP.grid(row=5, column=1, sticky='ew',pady=2)
+        self.buttonCarpeta.grid(row=3, column=1, sticky='w',pady=(0,20))
+        self.buttonPVP.grid(row=6, column=1, sticky='w',pady=(0,20))
 
     def browse_project_directory(self, parent):
         """
@@ -356,10 +356,10 @@ class SecondFrame(ttk.Frame):
         Posiciona los frames y widgets internos dentro del layout del frame principal.
         """
         #SElf frame principal
-        self.frameIzquierdo.grid(row=0,column=0,sticky='nsew',pady=(30,30),padx=(30,30))
-        self.frameDerecho.grid(row=0,column=1)
+        self.frameIzquierdo.grid(row=0,column=0,sticky='nsew',pady=(30,30),padx=(50,50))
+        self.frameDerecho.grid(row=0,column=1,pady=(30,30),padx=(50,50))
         #frame izquierdo
-        self.comparacion.grid(row=0,column=0,columnspan=2,pady=(10,15))        
+        self.comparacion.grid(row=0,column=0,columnspan=2,pady=(25,25))        
         
     def comparar_sp_vs_pvp(self,sp,pvp):
         """
@@ -420,13 +420,14 @@ class SecondFrame(ttk.Frame):
             self.comparacion.column(col, width=100,anchor='center')
 
         # Ajustes específicos para algunas columnas, estableciendo un ancho personalizado para mejorar la visibilidad.
+        self.comparacion.column('ITEM', width=50)
         self.comparacion.column('NOMBRE', width=60)
         self.comparacion.column('NOMBRE',width=60)
         self.comparacion.column('REFERENCIA',width=78)
         self.comparacion.column('CANTIDAD',width=70)
-        self.comparacion.column(3,width=110)
         self.comparacion.column(4,width=110)
-        self.comparacion.column(5,width=75)
+        self.comparacion.column(5,width=150)
+        self.comparacion.column(6,width=75)
 
 
         # Inserta los datos del DataFrame en el TreeView fila por fila.
@@ -489,7 +490,7 @@ class SecondFrame(ttk.Frame):
 
 
 
-App("Crear Oferta",(1000,500))
+App("Crear Oferta",(1200,600))
 
 
 

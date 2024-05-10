@@ -108,6 +108,7 @@ def generar_tabla_comparativa(SP, PVP, moneda_pvp):
 
     df_comparacion = pd.DataFrame()
     # Comparaciones directas entre columnas de ambos DataFrames
+    df_comparacion['ITEM']=SP.index
     df_comparacion['NOMBRE'] = SP['DESCRIPCION'] == PVP['DESCRIPCION']
     df_comparacion['REFERENCIA'] = SP['REFERENCIA'] == PVP['REFERENCIA']
     df_comparacion['CANTIDAD'] = SP['CANTIDAD'] == PVP['CANTIDAD']
@@ -135,12 +136,13 @@ def generar_tabla_comparativa(SP, PVP, moneda_pvp):
 
     return df_comparacion.round(3)
 
-def llenar_oferta(directorio, dfpvp):
+def llenar_oferta(directorio, dfpvp,moneda):
     """
     Llena y actualiza un archivo Excel de oferta con los datos proporcionados en el DataFrame dfpvp.
     
     :param directorio: Directorio donde se encuentra el archivo de oferta a actualizar.
     :param dfpvp: DataFrame que contiene los datos a insertar en el archivo de oferta.
+    :moneda: Tipo de moneda del PVP
     """
 
     archivo_of = next((archivo for archivo in os.listdir(directorio) if archivo.startswith('OFERTA')), None)
@@ -156,6 +158,26 @@ def llenar_oferta(directorio, dfpvp):
     # Obtener la fecha actual en el formato día/mes/año
     fecha_actual = datetime.now().strftime("%d/%m/%Y")
     hoja_destino['I17'] = f"FECHA: {fecha_actual}"
+
+    hoja_destino['D86']=moneda
+
+    currency_formats = {
+    'COP': '[$COP] #,##0.00',
+    'USD': '$#,##0.00',
+    'EUR': '€#,##0.00'
+    }
+    currency_format = currency_formats.get(moneda, '[$COP] #,##0.00')  # Default a COP si la moneda no está definida
+    # Aplicar el formato al rango de celdas F21:G75
+    for row in hoja_destino['F21:G75']:
+        for cell in row:
+            cell.number_format = currency_format
+
+    # Aplicar el mismo formato a celdas específicas adicionales
+    additional_cells = ['G78', 'G77', 'G79']
+    for cell_address in additional_cells:
+        hoja_destino[cell_address].number_format = currency_format
+
+
     img = Image(os.path.join(script_directory,'..','docs','second.png'))
     hoja_destino.add_image(img, 'B1')
 

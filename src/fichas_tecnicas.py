@@ -57,10 +57,12 @@ def main(ruta_destino,ruta_base):
     """
 
     df=rutas_y_dataframe(ruta_destino,ruta_base)
+
     total_fichas=len(df)
     no_encontradas=[]
     #Iterate over the dataframe's first column, processing each sheet.
     for ficha in df.iloc[:, 0]:
+
         # Busca la ficha y la copia. Si no existe la ficha encontrada = false
         encontrada=buscar_y_copiar(ficha, ruta_fichas, ruta_destino)
         # Provides feedback if a sheet is specified in the CSV but not found in the source directory.
