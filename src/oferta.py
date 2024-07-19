@@ -159,7 +159,24 @@ def llenar_oferta(directorio, dfpvp,moneda):
     fecha_actual = datetime.now().strftime("%d/%m/%Y")
     hoja_destino['I17'] = f"FECHA: {fecha_actual}"
 
-    hoja_destino['D86']=moneda
+
+    # Valores a buscar en la columna 'G'
+    valores_a_buscar = ['SUBTOTAL', 'IVA 19%', 'TOTAL']
+    filas_encontradas = {}
+
+    # Itera sobre la columna 'G'
+    for fila in range(1, hoja_destino.max_row + 1):
+        celda = hoja_destino[f'F{fila}']
+        if celda.value in valores_a_buscar:
+            filas_encontradas[celda.value] = fila
+
+    # Itera sobre la columna 'C'
+    for fila in range(1, hoja_destino.max_row + 1):
+        celda = hoja_destino[f'C{fila}']
+        if celda.value == 'MONEDA':
+            moneda_celda_fila = fila
+    
+    hoja_destino[f'D{moneda_celda_fila}']=moneda
 
     currency_formats = {
     'COP': '[$COP] #,##0.00',
@@ -173,7 +190,7 @@ def llenar_oferta(directorio, dfpvp,moneda):
             cell.number_format = currency_format
 
     # Aplicar el mismo formato a celdas específicas adicionales
-    additional_cells = ['G78', 'G77', 'G79']
+    additional_cells = [f'G{filas_encontradas['IVA 19%']}', f'G{filas_encontradas['SUBTOTAL']}', f'G{filas_encontradas['TOTAL']}']
     for cell_address in additional_cells:
         hoja_destino[cell_address].number_format = currency_format
 

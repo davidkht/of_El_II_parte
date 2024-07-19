@@ -29,8 +29,8 @@ class App(tk.Tk):
         super().__init__()
         self.title(titulo)# Establece el título de la ventana
         self.geometry(f'{geometria[0]}x{geometria[1]}')# Configura las dimensiones de la ventana
-        self.resizable(True,True)# Permite que la ventana sea redimensionable
-        self.minsize(850,530)# Establece el tamaño mínimo de la ventana
+        self.resizable(False,False)# Permite que la ventana sea redimensionable
+
         self.icono_e_imagen()# Método para establecer el icono de la aplicación
         
         # Configurar la expansión de las filas y columnas
@@ -232,8 +232,8 @@ class FirstFrame(ttk.Frame):
         self.entryPVPVar = tk.StringVar()
         
         # Entry widgets for displaying the paths, set to readonly to prevent manual user edits.
-        self.entryCarpeta = ttk.Entry(self, textvariable=self.entryCarpetaVar, width=180, state='readonly')
-        self.entryPVP = ttk.Entry(self, textvariable=self.entryPVPVar, width=180, state='readonly')
+        self.entryCarpeta = ttk.Entry(self, textvariable=self.entryCarpetaVar, width=150, state='readonly')
+        self.entryPVP = ttk.Entry(self, textvariable=self.entryPVPVar, width=150, state='readonly')
         
         # Buttons for triggering the browse dialogs.
         self.buttonCarpeta = ttk.Button(self, text='Examinar', width=25, command=lambda parent=parent:self.browse_project_directory(parent))
@@ -356,8 +356,8 @@ class SecondFrame(ttk.Frame):
         Posiciona los frames y widgets internos dentro del layout del frame principal.
         """
         #SElf frame principal
-        self.frameIzquierdo.grid(row=0,column=0,sticky='nsew',pady=(30,30),padx=(50,50))
-        self.frameDerecho.grid(row=0,column=1,pady=(30,30),padx=(50,50))
+        self.frameIzquierdo.grid(row=0,column=0,sticky='nsew',pady=(20,20),padx=(50,0))
+        self.frameDerecho.grid(row=0,column=1,pady=(20,20),padx=(20,50))
         #frame izquierdo
         self.comparacion.grid(row=0,column=0,columnspan=2,pady=(25,25))        
         
@@ -490,7 +490,7 @@ class SecondFrame(ttk.Frame):
 
 
 
-App("Crear Oferta",(1200,600))
+App("Crear Oferta",(1050,550))
 
 
 
